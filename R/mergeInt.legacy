@@ -1,0 +1,49 @@
+#' Merge syntenic intervals
+#'
+#' Merge syntenic intervals within the specified length to one
+#' interval for genotyping. Read counts in the merged intervals
+#' will be summed up and read ratios also will be recalculated
+#' based on the summed read counts.
+#'
+#' @param object A SInG object after executing [doSInG()].
+#' @param len A numeric value to indicate the stretch within which
+#' syntenic intervals will be merged.
+#'
+#' @importFrom IRanges width
+#'
+#' @export
+#'
+mergeInt <- function(object, len) {
+    stopifnot(inherits(object, "SInG"))
+    stopifnot(is.null(object$intInfo))
+
+    object <- .findNewParent(object, len = len)
+    object <- .countIntRead(object)
+
+    return(object)
+}
+
+.findNewParent <- function(object, len){
+    int_len_ref <- tapply(IRanges::width(object$varInt$ref), object$varInt$ref$parent, sum)
+    int_len_alt <- tapply(IRanges::width(object$varInt$alt), object$varInt$alt$parent, sum)
+    n <- length(int_len_ref)
+    cum_len_ref <- 0
+    cum_len_alt <- 0
+    int_group <- NULL
+    int_count <- 1
+    for (i in 1:n) {
+        cum_len_ref <- cum_len_ref + int_len_ref[i]
+        cum_len_alt <- cum_len_alt + int_len_alt[i]
+        if (cum_len_ref >= len & cum_len_alt >= len) {
+            cum_len_ref <- 0
+            cum_len_alt <- 0
+            int_group <- c(int_group, int_count)
+            int_count <- int_count + 1
+        } else {
+            int_group <- c(int_group, int_count)
+        }
+    }
+    object$varInt$ref$parent <- as.numeric(as.factor(new_group[object$varInt$ref$parent]))
+    object$varInt$alt$parent <- as.numeric(as.factor(new_group[object$varInt$alt$parent]))
+    return(object)
+}
