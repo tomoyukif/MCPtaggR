@@ -10,7 +10,7 @@
 #'
 #' @export
 #'
-makeSnpList <- function(snps_fn, coord_fn){
+mummer2SNPs <- function(snps_fn, coord_fn){
     snps <- fread(file = snps_fn,
                   header = FALSE,
                   skip = 4,
@@ -74,6 +74,7 @@ makeSnpList <- function(snps_fn, coord_fn){
 ################################################################################
 ### Make RE site lists, detectable SNP list, and digested genome fragments
 #' @importFrom Biostrings readDNAStringSet writeXStringSet
+#' @importFrom GenomeInfoDb seqlevels seqlevels<-
 #' @import BSgenome
 #'
 #' @export
@@ -102,8 +103,36 @@ digestGenome <- function(snps, ref_fn, alt_fn, prefix, read_len, re){
     writeXStringSet(alt_reads$read2, fastq_fn[4],
                     compress = TRUE, format = "fastq")
     names(fastq_fn) <- c("ref_r1", "ref_r2", "alt_r1", "alt_r2")
-    names(ref_genome) <- paste0("ref_", names(ref_genome))
-    names(alt_genome) <- paste0("alt_", names(alt_genome))
+
+    rgn <- names(ref_genome)
+    agn <- names(alt_genome)
+    rsn <- seqlevels(ref_snps)
+    asn <- seqlevels(alt_snps)
+    rsg <- seqlevels(ref_seg)
+    asg <- seqlevels(alt_seg)
+    if(!all(rsn %in% rgn)){
+        rsn_i <- as.numeric(sub(".*[^0-9]", "", sub("[^0-9].*", "", rsn)))
+        rsn <- paste0("chr", sprintf("%02d", rsn_i))
+        rgn_i <- as.numeric(sub(".*[^0-9]", "", sub("[^0-9].*", "", rgn)))
+        rgn <- paste0("chr", sprintf("%02d", rgn_i))
+        rsg_i <- as.numeric(sub(".*[^0-9]", "", sub("[^0-9].*", "", rsg)))
+        rsg <- paste0("chr", sprintf("%02d", rsg_i))
+    }
+    if(!all(asn %in% agn)){
+        asn_i <- as.numeric(gsub(".*[^0-9]", "", gsub("[^0-9].*", "", asn)))
+        asn <- paste0("chr", sprintf("%02d", asn_i))
+        agn_i <- as.numeric(gsub(".*[^0-9]", "", gsub("[^0-9].*", "", agn)))
+        agn <- paste0("chr", sprintf("%02d", agn_i))
+        asg_i <- as.numeric(gsub(".*[^0-9]", "", gsub("[^0-9].*", "", asg)))
+        asg <- paste0("chr", sprintf("%02d", asg_i))
+    }
+    names(ref_genome) <- paste0("ref_", rgn)
+    names(alt_genome) <- paste0("alt_", agn)
+    seqlevels(ref_snps) <- paste0("ref_", rsn)
+    seqlevels(alt_snps) <- paste0("alt_", asn)
+    seqlevels(ref_seg) <- paste0("ref_", rsg)
+    seqlevels(alt_seg) <- paste0("alt_", asg)
+
     genome <- c(ref_genome, alt_genome)
     genome_fn <- paste0(prefix, "merge.fa.gz")
     writeXStringSet(genome, genome_fn,
@@ -215,9 +244,12 @@ alignRead <- function(dg,
 ################################################################################
 #'
 #' @importFrom Rsamtools scanBam
+#' @importFrom GenomicRanges findOverlaps
+#' @importFrom S4Vectors subjectHits
+#' @importFrom dplyr intersect
 #' @export
 # Get valid TAG markers
-getTAG <- function(ar, dg){
+validSNP <- function(ar, dg){
     stopifnot(inherits(ar, "AR"))
     stopifnot(inherits(dg, "DG"))
     dg <- .getPairedTag(dg)
@@ -227,59 +259,13 @@ getTAG <- function(ar, dg){
     bam2 <- scanBam(ar$bam_fn[2])[[1]]
     seg_alt <- .pickValidTag(bam2, dg$seg$alt)
 
-    tags <- .getValidTagPair(seg_ref, seg_alt, dg)
-    tags <- .getTagSeq(tags, dg$genome)
-    class(tags) <- c(class(tags), "TAG")
-    return(tags)
-}
-
-#' @importFrom Biostrings readDNAStringSet writeXStringSet writeXStringSet
-#' @importFrom GenomeInfoDb seqlevels<- seqlevels
-#' @importFrom Rsubread buildindex
-.getTagSeq <- function(tags, genome_fn){
-    genome <- readDNAStringSet(genome_fn)
-    seqlevels(tags$ref) <- paste0("ref_", seqlevels(tags$ref))
-    seqlevels(tags$alt) <- paste0("alt_", seqlevels(tags$alt))
-    tag_seq <- c(genome[tags$ref], genome[tags$alt])
-    names(tag_seq) <- c(paste0("ref_", seq_along(tags$ref)),
-                        paste0("alt_", seq_along(tags$alt)))
-    tags$ref$id <- paste0("ref_", seq_along(tags$ref))
-    tags$alt$id <- paste0("alt_", seq_along(tags$alt))
-    stag_fn <- sub("_merge", "_STAG", genome_fn)
-    writeXStringSet(tag_seq, stag_fn)
-    index_fn <- sub("\\.fa.gz", "", stag_fn)
-    buildindex(index_fn, stag_fn)
-    tags <- c(tags, list(index_fn = index_fn))
-    return(tags)
-}
-
-#' @importFrom GenomicRanges findOverlaps reduce
-#' @importFrom GenomeInfoDb seqnames
-#' @importFrom BiocGenerics start
-#' @importFrom dplyr left_join
-#' @importFrom S4Vectors queryHits
-.getValidTagPair <- function(seg_ref, seg_alt, dg){
-    ol <- findOverlaps(seg_ref, dg$snps$ref)
-    valiable_tag <- seq_along(seg_ref) %in% unique(queryHits(ol))
-    seg_ref <- seg_ref[valiable_tag]
-    seg_ref <- reduce(seg_ref)
-    seg_ref <- seg_ref[order(as.character(seqnames(seg_ref)), start(seg_ref))]
-
-    ol <- findOverlaps(seg_alt, dg$snps$alt)
-    valiable_tag <- seq_along(seg_alt) %in% unique(queryHits(ol))
-    seg_alt <- seg_alt[valiable_tag]
-    seg_alt <- reduce(seg_alt)
-    seg_alt <- seg_alt[order(as.character(seqnames(seg_alt)), start(seg_alt))]
-
-    ref_map <- as.data.frame(findOverlaps(seg_ref, dg$snps$ref))
-    alt_map <- as.data.frame(findOverlaps(seg_alt, dg$snps$alt))
-    map <- left_join(ref_map, alt_map, "subjectHits")
-    map <- unique(map[, -2])
-    map <- map[!is.na(map$queryHits.x) & !is.na(map$queryHits.y), ]
-    seg_ref <- seg_ref[map$queryHits.x]
-    seg_alt <- seg_alt[map$queryHits.y]
-
-    return(list(ref = seg_ref, alt = seg_alt))
+    ref_ol <- findOverlaps(seg_ref, dg$snps$ref)
+    alt_ol <- findOverlaps(seg_alt, dg$snps$alt)
+    valid_snps <- intersect(subjectHits(ref_ol), subjectHits(alt_ol))
+    out <- list(ref = dg$snps$ref[valid_snps], alt = dg$snps$alt[valid_snps])
+    out$index_fn <- ar$index_fn
+    class(out) <- c(class(out), "GSNPs")
+    return(out)
 }
 
 .getPairedTag <- function(dg){
@@ -309,7 +295,7 @@ getTAG <- function(ar, dg){
     seg[c(FALSE, TRUE)] <- seg2
 
     valid <- grepl("^[0-9]*M$", bam$cigar)
-    valid <- valid & sub("ref_|alt_", "", bam$rname) == as.character(seqnames(seg))
+    valid <- valid & bam$rname == as.character(seqnames(seg))
     valid <- valid & bam$pos == start(seg)
     seg$qname <- bam$qname
     seg$seq <- bam$seq
@@ -324,6 +310,7 @@ getTAG <- function(ar, dg){
 #' @importFrom Rsubread align buildindex
 #' @importFrom Rsamtools scanBamFlag ScanBamParam scanBam
 #' @importFrom BiocGenerics width
+#' @importFrom GenomeInfoDb seqlevels seqlevels<-
 #'
 mergeGenome <- function(snps, ref_fn, alt_fn, prefix, indexing = TRUE){
     stopifnot(inherits(snps, "SNPs"))
@@ -369,34 +356,32 @@ mergeGenome <- function(snps, ref_fn, alt_fn, prefix, indexing = TRUE){
     return(out)
 }
 
+
 ################################################################################
 # Count reads
 #'
 #'
 #' @export
 #'
-doSInG <- function(object, fq_list, prefix, n_threads, vcf, rnaseq = FALSE){
-    if(inherits(object, "TAG")  | inherits(object, "GSNPs")){
-        count_list <- .count.reads(object, fq_list, n_threads, rnaseq)
+doSInG <- function(object, fq_list, prefix, n_threads, n_parallel = 2, vcf, rnaseq = FALSE){
+    if(inherits(object, "GSNPs")){
+        count_list <- .count.reads(object, fq_list, n_threads, n_parallel, rnaseq)
     } else {
-        stop("object should be a TAG or GSNPs class object.")
+        stop("object should be a GSNPs class object.")
     }
     colnames(count_list) <- fq_list[, ncol(fq_list)]
 
     message("Creating a GDS file as output...")
-    if(inherits(object, "GSNPs")){
-        object <- object$snps
-    }
     out_fn <- .create.gds(object, count_list, prefix, vcf)
     return(out_fn)
 }
 
-.count.reads <- function(object, fq_list, n_threads, rnaseq){
-    count_list <- NULL
-    for(i in seq_len(nrow(fq_list))){
-        count_list <- cbind(count_list,
-                            .getCounts(object, fq_list[i, ], n_threads, rnaseq))
-    }
+#' @importFrom parallel mcmapply
+.count.reads <- function(object, fq_list, n_threads, n_parallel, rnaseq){
+    count_list <- mcmapply(seq_len(nrow(fq_list)), mc.cores = n_parallel,
+                           FUN = function(i){
+                               return(.getCounts(object, fq_list[i, ], n_threads, rnaseq))
+                           })
     return(count_list)
 }
 
@@ -410,42 +395,9 @@ doSInG <- function(object, fq_list, prefix, n_threads, vcf, rnaseq = FALSE){
     aln_dir <- paste(dir, "aln", sep = "/")
     dir.create(aln_dir, showWarnings = FALSE)
 
-    if(inherits(object, "TAG")){
-        count <- .alignToTag(object, fq_fn, n_threads, aln_dir)
-    } else {
-        count <- .alignToGenome(object, fq_fn, n_threads, aln_dir, rnaseq)
-    }
+    count <- .alignToGenome(object, fq_fn, n_threads, aln_dir, rnaseq)
 
     return(count)
-}
-
-.alignToTag <- function(tags, fq_fn, n_threads, aln_dir){
-    if(length(fq_fn) == 2){
-        bam_fn <- paste0(aln_dir, "/", fq_fn[2], ".bam")
-        aln <- align(tags$index_fn, fq_fn[1], type = "dna",
-                     output_file = bam_fn,
-                     nthreads = n_threads, maxMismatches = 0, unique = FALSE,
-                     nBestLocations = 2, indels = 0)
-
-    } else {
-        bam_fn <- paste0(aln_dir, "/", fq_fn[3], ".bam")
-        aln <- align(tags$index_fn, fq_fn[1], fq_fn[2], type = "dna",
-                     output_file = bam_fn,
-                     nthreads = n_threads, maxMismatches = 0, unique = FALSE,
-                     nBestLocations = 2, indels = 0)
-    }
-
-    param <- ScanBamParam(scanBamFlag(isUnmappedQuery = FALSE),
-                          simpleCigar = TRUE, what = c("rname", "cigar"))
-    bam <- scanBam(bam_fn, param = param)[[1]]
-    bam$cigar <- as.numeric(sub("M", "", bam$cigar))
-    tag_w <- c(width(tags$ref), width(tags$alt))
-    id <- c(tags$ref$id, tags$alt$id)
-    map <- match(bam$rname, id)
-    full_map <- bam$cigar == 150
-    full_map <- full_map | bam$cigar == tag_w[map]
-    bam <- bam$rname[full_map]
-    return(table(bam))
 }
 
 #' @importFrom GenomicAlignments readGAlignments cigar
@@ -453,34 +405,25 @@ doSInG <- function(object, fq_list, prefix, n_threads, vcf, rnaseq = FALSE){
 #' @importFrom GenomeInfoDb seqlevels
 #' @importFrom GenomicRanges grglist findOverlaps
 #' @importFrom S4Vectors subjectHits
-.alignToGenome <- function(gsnps, fq_fn, n_threads, aln_dir, rnaseq){
+.alignToGenome <- function(object, fq_fn, n_threads, aln_dir, rnaseq){
     if(length(fq_fn) == 2){
         bam_fn <- paste0(aln_dir, "/", fq_fn[2], ".bam")
-        aln <- align(gsnps$index_fn, fq_fn[1], type = "dna",
+        aln <- align(object$index_fn, fq_fn[1], type = "dna",
                      output_file = bam_fn,
                      nthreads = n_threads, maxMismatches = 0, unique = TRUE,
                      indels = 0)
 
     } else {
         bam_fn <- paste0(aln_dir, "/", fq_fn[3], ".bam")
-        aln <- align(gsnps$index_fn, fq_fn[1], fq_fn[2], type = "dna",
+        aln <- align(object$index_fn, fq_fn[1], fq_fn[2], type = "dna",
                      output_file = bam_fn,
                      nthreads = n_threads, maxMismatches = 0, unique = TRUE,
                      indels = 0)
     }
 
     ga <- readGAlignments(file = bam_fn)
-    check <- all(seqlevels(ga) %in% c(seqlevels(gsnps$snps$ref),
-                                      seqlevels(gsnps$snps$alt)))
-    if(!check){
-        stop('Chromosome names in the given BAM file and the mummer files ',
-             'do not match.', '\nChromosome names in the BAM file:\n',
-             paste(seqlevels(ga), collapse = "\ "),
-             '\nChromosome names in the mummer files:\n',
-             paste(c(seqlevels(gsnps$snps$ref), seqlevels(gsnps$snps$alt)),
-                   collapse = "\ "))
-    }
-
+    check <- all(seqlevels(ga) %in% c(seqlevels(object$ref),
+                                      seqlevels(object$alt)))
     if(rnaseq){
         incomple <- grepl("S|I|D|H|P|X", cigar(ga))
         ga <- ga[!incomple]
@@ -492,10 +435,10 @@ doSInG <- function(object, fq_list, prefix, n_threads, vcf, rnaseq = FALSE){
         ga <- ga[!incomple]
     }
 
-    ref_count <- table(factor(subjectHits(findOverlaps(ga, gsnps$snps$ref)),
-                              seq_along(gsnps$snps$ref)))
-    alt_count <- table(factor(subjectHits(findOverlaps(ga, gsnps$snps$alt)),
-                              seq_along(gsnps$snps$alt)))
+    ref_count <- table(factor(subjectHits(findOverlaps(ga, object$ref)),
+                              seq_along(object$ref)))
+    alt_count <- table(factor(subjectHits(findOverlaps(ga, object$alt)),
+                              seq_along(object$alt)))
     count <- c(ref_count, alt_count)
     return(count)
 }
@@ -581,11 +524,12 @@ doSInG <- function(object, fq_list, prefix, n_threads, vcf, rnaseq = FALSE){
 #'
 #'
 #' @importFrom Rsamtools pileup PileupParam
-#' @importFrom dplyr left_join
+#' @importFrom dplyr full_join
+#' @importFrom parallel mclapply
 #'
 #' @export
 #'
-doGBS <- function(ref_fn, fq_list, prefix, n_threads, vcf, indexing){
+doGBS <- function(ref_fn, fq_list, prefix, n_threads, n_parallel, vcf, indexing){
     index_fn <- sub("\\.fas*t*a*\\.*g*z*", "", ref_fn)
     if(indexing){
         buildindex(index_fn, ref_fn)
@@ -603,49 +547,53 @@ doGBS <- function(ref_fn, fq_list, prefix, n_threads, vcf, indexing){
     aln_dir <- paste(dir, "vcf", sep = "/")
     dir.create(aln_dir, showWarnings = FALSE)
 
-    count_list <- NULL
-    for(i in seq_len(nrow(fq_list))){
-        if(ncol(fq_list) == 2){
-            bam_fn <- paste0(aln_dir, "/", fq_list[i, 2], ".bam")
-            aln <- align(index_fn, fq_list[i, 1], type = "dna",
-                         output_file = bam_fn, sortReadsByCoordinates = TRUE,
-                         readGroup = fq_list[i, 2], readGroupID = fq_list[i, 2],
-                         nthreads = n_threads, unique = TRUE)
+    count_list <- mclapply(seq_len(nrow(fq_list)), mc.cores = n_parallel,
+                           FUN = function(i){
+                               if(length(fq_list[i, ]) == 2){
+                                   bam_fn <- paste0(aln_dir, "/", fq_list[i, 2], ".bam")
+                                   aln <- align(index_fn, fq_list[i, 1], type = "dna",
+                                                output_file = bam_fn, sortReadsByCoordinates = TRUE,
+                                                readGroup = fq_list[i, 2], readGroupID = fq_list[i, 2],
+                                                nthreads = n_threads, unique = TRUE)
 
-        } else {
-            bam_fn <- paste0(aln_dir, "/", fq_list[i, 3], ".bam")
-            aln <- align(index_fn, fq_list[i, 1], fq_list[i, 2], type = "dna",
-                         output_file = bam_fn, sortReadsByCoordinates = TRUE,
-                         readGroup = fq_list[i, 3], readGroupID = fq_list[i, 3],
-                         nthreads = n_threads, unique = TRUE)
-        }
-        pp <- PileupParam(min_mapq = 20, distinguish_strands = FALSE,
-                          include_insertions = TRUE)
-        bai_fn <- paste0(bam_fn, ".bai")
-        count_list <- c(count_list,
-                        list(pileup(bam_fn, bai_fn, pileupParam = pp)))
-    }
+                               } else {
+                                   bam_fn <- paste0(aln_dir, "/", fq_list[i, 3], ".bam")
+                                   aln <- align(index_fn, fq_list[i, 1], fq_list[i, 2], type = "dna",
+                                                output_file = bam_fn, sortReadsByCoordinates = TRUE,
+                                                readGroup = fq_list[i, 3], readGroupID = fq_list[i, 3],
+                                                nthreads = n_threads, unique = TRUE)
+                               }
+                               pp <- PileupParam(min_mapq = 20, distinguish_strands = FALSE,
+                                                 include_insertions = TRUE)
+                               bai_fn <- paste0(bam_fn, ".bai")
+                               pileup(bam_fn, bai_fn, pileupParam = pp)
+                           })
 
     by_cols <- c("seqnames", "pos", "nucleotide")
     for(i in seq_along(count_list)){
         if(i == 1){
             df <- count_list[[i]]
         } else {
-            df <- left_join(df, count_list[[i]], by_cols)
+            df <- full_join(df, count_list[[i]], by_cols)
         }
     }
     df <- df[order(df$seqnames, df$pos), ]
-    dup <- duplicated(df[, c("seqnames", "pos")])
-    variant <- which(dup)
-    variant <- sort(unique(c(variant, variant - 1)))
+    snp_id <- paste0(df$seqnames, df$pos)
+    snp_id_table <- table(snp_id)
+    biallelic_snp_id <- snp_id_table[snp_id_table == 2]
+    biallelic_snp_id <- names(biallelic_snp_id)
+    biallelic_df <- !is.na(match(snp_id, biallelic_snp_id))
 
-    df <- df[variant, ]
+    df <- df[biallelic_df, ]
+    df <- df[order(df$seqnames, df$pos), ]
     chr <- df[c(TRUE, FALSE), "seqnames"]
     pos <- df[c(TRUE, FALSE), "pos"]
     ref_allele <- df[c(TRUE, FALSE), "nucleotide"]
     alt_allele <- df[c(FALSE, TRUE), "nucleotide"]
     ref <- t(df[c(TRUE, FALSE), -(1:3)])
     alt <- t(df[c(FALSE, TRUE), -(1:3)])
+    ref[is.na(ref)] <- 0
+    alt[is.na(alt)] <- 0
     n_mar <- ncol(ref)
     n_sam <- nrow(ref)
     genmat <- matrix(0, n_sam, n_mar)
