@@ -1,10 +1,11 @@
-Package: SInG
-Title: Syntenic interval genotyping
+Package: MCPtaggR
+Title: Mappable-collinear-polymorphic tag genotyping pipeline
 Version: 0.99.1
 Authors@R: 
     person("Tomoyuki", "Furuta", , "f.tomoyuki@okayama-u.ac.jp", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: This package provides functions to perform syntenic interval genotyping.
+Description: This package provides functions to perform 
+Mappable-collinear-polymorphic tag genotyping (MCPtagg).
 License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true

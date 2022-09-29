@@ -1,1 +1,2 @@
-# SInG
+# MCPtaggR
+The details will be available soon...
