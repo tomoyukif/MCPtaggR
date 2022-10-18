@@ -3,6 +3,7 @@
 export(alignTAG)
 export(digestGenome)
 export(findMCPtag)
+export(makeRE)
 export(mcptagg)
 export(mergeGenome)
 export(mummer2SNPs)

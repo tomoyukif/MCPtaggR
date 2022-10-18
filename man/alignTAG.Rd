@@ -6,25 +6,25 @@
 \usage{
 alignTAG(
   dg,
-  n_threads = 1,
-  indexing = TRUE,
   out_dir = "",
   out_fn = "mcptaggr_aln",
+  n_threads = 1,
+  indexing = TRUE,
   reuse = FALSE
 )
 }
 \arguments{
 \item{dg}{A DG object.}
 
+\item{out_dir}{A string to specify the output directory.}
+
+\item{out_fn}{A string to specify the prefix of output files.}
+
 \item{n_threads}{A integer to specify the number of threads to run the read
 alignment.}
 
 \item{indexing}{A logical value to indicate whether you need to build index
 files of the merged genome the generated via \code{digestGenome()}.}
-
-\item{out_dir}{A string to specify the output directory.}
-
-\item{out_fn}{A string to specify the prefix of output files.}
 
 \item{reuse}{If TRUE, this function do not generate output files but reuse
 the files specified as out_fn in the out_dir directory.}

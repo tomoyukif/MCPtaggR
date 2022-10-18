@@ -1,0 +1,120 @@
+---
+title: "Basic usage of MCPtaggR"
+author: 
+  -name: "Tomoyuki Furuta"
+  affiliation: Institute of Plant Science and Resources, Okayama University, Okayama, Japan
+  email: f.tomoyuki@okayama-u.ac.jp
+date: "October 18, 2022"
+package: MCPtaggR
+output: 
+  BiocStyle::html_document:
+    toc: true
+    toc_float: true
+vignette: >
+  %\VignetteIndexEntry{Basic usage of MCPtaggR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.pos = 'H', fig.align = "center", warning = FALSE, message = FALSE)
+```
+
+# Introduction
+MCPtaggR provides the pipeline to conduct mappable-collinear-polymorphic 
+tags genotyping (MCPtagg). MCPtagg is a pipeline for 
+next generation sequencing (NGS)-based genotyping technique to precisely 
+detect SNPs and count reads on validated tags (short genome segments or 
+regions) based on genome comparison information. Short NGS reads can not 
+always be mapped to the proper positions on the reference genome if the reads 
+were originally derived from a genome that have plenty polymorphisms and 
+structural variations against the reference genome, e.g. mapping reads of a 
+hybrid population that were derived from a cross between distant relatives. 
+Polymorphic reads that were derived from a non-reference genome could result 
+in mismapping and unmapped due to mappings to multiple locations on the 
+reference genome with the same mapping quality. Those mapping errors and 
+mappability biases lead biased detection of mapped reads on SNP markers where 
+reads of either alleles are preferentially mapped. To eliminate unexpected 
+detection of such error prone markers, MCPtagg first filter out potential SNP 
+markers based on the genome comparison of the founder varieties (individuals) 
+by MUMmer followed by mappability validation of potential reads that would be 
+sequenced by NGS. The pipeline then aligns the given reads and counts only 
+those which were uniquely mapped onto retained mappable tags that were short 
+genome segments simulated by in-silico digestion of the given genomes as the 
+potential reads and then verified to have polymorphisms located in collinear 
+blocks between the given genomes. The MCPtagg pipeline efficiently eliminates
+error prone markers from your resultant genotype data obtained via a 
+NGS-based genotyping technique, comapred to the result produced by the 
+conventional pipeline that aligns reads on one reference genome.
+
+# Prerequisites
+`MCPtaggR` requires external tools: MUMmer and Subreads. Please install these 
+two tools on your system and make sure their executable files can be executed 
+from your R environment. 
+For installation of MUMmer, please visit [MUMmer's web site](https://mummer4.github.io/install/install.html).
+For installation of Subread, please see [the vignette of Rsubread](https://bioconductor.org/packages/release/bioc/vignettes/Rsubread/inst/doc/SubreadUsersGuide.pdf).
+
+# Installation
+You can install `MCPtaggR` from the GitHub repository.
+```
+if (!requireNamespace("devtools", quietly = TRUE))
+    install.packages("devtools")
+    
+devtools::install_github("tomoyukif/MCPtaggR", build_vignettes = TRUE)
+```
+
+# The basic pipeline
+Load the package.
+```{r warning=FALSE, message=FALSE}
+library("MCPtaggR")
+```
+\ 
+
+Run MUMmer.
+```{r eval=FALSE}
+ref_fn <- "path/to/refrence_genome_sequence.fa"
+alt_fn <- "path/to/alternative_genome_sequence.fa"
+mummer_dir <- "path/to/directory/includes/mummer_executables"
+out_dir <- "directory/to/write/output"
+out_fn <- "prefix_of_output_files"
+mummer_fn <- run_mummer(ref_fn, alt_fn, mummer_dir, out_dir, out_fn)
+```
+\ 
+
+Import and organize information of NPSs in collinear blocks.
+```{r eval=FALSE}
+snps <- mummer2SNPs(mummer_fn)
+```
+\ 
+
+Execute in-silico digestion of the given genomes.
+```{r eval=FALSE}
+read_len <- 150
+re_names <- c("PstI", "MspI")
+re <- makeRE(re_names)
+fragment_lne = c(0, 1000)
+dg <- digestGenome(snps, ref_fn, alt_fn, out_dir, read_len, re, fragment_len)
+```
+
+Align the simulated digested fragments to the given genomes.
+```{r eval=FALSE}
+fragment_lne = c(0, 1000)
+ar <- alignTAG(dg, out_dir, out_fn)
+```
+
+Evaluate mappability of tags.
+```{r eval=FALSE}
+mcptagg <- findValidSNP(ar, dg)
+```
+
+Count reads on the MCPtags.
+```{r eval=FALSE}
+in_dir <- "path/to/directory/contains_FASTQ_files"
+fq_list <- findFASTQ(in_dir)
+mcptagg <- mcptagg(mcptag, fq_list, out_dir)
+```
+
+# Session info{-}
+```{r}
+sessionInfo()
+```
+

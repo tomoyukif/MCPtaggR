@@ -43,6 +43,7 @@ run_mummer <- function(ref_fn,
                        mummer_dir,
                        out_dir = "", 
                        out_fn = "mummer_out"){
+    dir.create(out_dir, showWarnings = FALSE)
     
     # Run nucmer
     command <- paste(mummer_dir, "nucmer", sep = "/")
@@ -164,6 +165,88 @@ mummer2SNPs <- function(mummer_fn){
     return(snps)
 }
 
+#' Build a RE object
+#' 
+#' A RE object stores the information of recognition sequences of restriction 
+#' enzymes (REs) and also the remnant sequences after the cut by the REs. 
+#' 
+#' @param re_names A character vector to indicate the names of REs. 
+#' @param re_sites A character vector to indicate the RE recognition sites.
+#' 
+#' @return A RE object.
+#' 
+#' @details The RE object produced via this function is required to run 
+#' `digestGenome()`. The order of strings specified to `re_names` and `re_sites`
+#' are important so that the first one indicates the cut site found in the 
+#' forward reads (Read 1 of the NGS output) while the second one indicates the 
+#' cut site found in the reverse reads (Read 2 of the NGS output).
+#' If not `re_sites = NULL`, `re_names` will be ignored and 
+#' make a RE object using specified `re_sites` information. `re_sites` requires 
+#' a vector of strings in which each string represent the recognition sequence 
+#' and the cut position on the top strand. For example, the site of PstI should 
+#' be specified as `re_sites = "CTGCA/G"` in which the recognition sequence is 
+#' "CTGCAG" and the cut site is the position between the 5th A and the 6th G.
+#' The currently supported REs that can be specified to `re_names` are listed 
+#' below.
+#' * KpnI
+#' * PstI
+#' * MspI
+#' * ApeKI
+#' @md
+#' 
+#' @examples 
+#' \dontrun{
+#' re_names <- c("KpnI", "MspI")
+#' re <- makeRE(re_names)
+#' }
+#' 
+#' @export
+#' 
+makeRE <- function(re_names, re_sites){
+    if(is.null(re_sites) & !is.null(re_names)){
+        stopifnot(length(re_names) %in% c(1, 2))
+        if("PstI" %in% re_names){
+            re_sites <- c(re_sites, "CTGCA/G")
+        }
+        if("KpnI" %in% re_names){
+            re_sites <- c(re_sites, "GGTAC/C")
+        }
+        if("MspI" %in% re_names){
+            re_sites <- c(re_sites, "C/CGG")
+        }
+        if("ApeKI" %in% re_names){
+            re_sites <- c(re_sites, "G/CWGC")
+        }
+    }
+    
+    out <- NULL
+    for(i_site in re_sites){
+        len <- nchar(i_site)
+        cut_pos <- unlist(gregexec("/", i_site))
+        top2 <- len - cut_pos
+        top1 <- cut_pos - top2
+        if(top1 < top2){
+            if(is.null(out)){
+                f <- 0
+                r <- top2 - cut_pos
+            } else {
+                f <- top2 - cut_pos
+                r <- 0
+            }
+        } else {
+            if(is.null(out)){
+                f <- top1 - top2
+                r <- -1
+            } else {
+                f <- -1
+                r <- top1 - top2
+            }
+        }
+        out <- rbind(out, data.frame(site = i_site, f = f, r = r))
+    }
+    return(out)
+}
+
 ################################################################################
 ### Make RE site lists, detectable SNP list, and digested genome fragments
 #' In silico digestion of the input genomes
@@ -220,6 +303,7 @@ digestGenome <- function(snps,
                          fragment_len = c(0, 1000),
                          reuse = TRUE){
     stopifnot(inherits(snps, "SNPs"))
+    dir.create(out_dir, showWarnings = FALSE)
     
     ref_genome <- readDNAStringSet(ref_fn)
     ref_seg <- .insilicoRE(ref_genome, re)
@@ -339,31 +423,50 @@ digestGenome <- function(snps,
 #' @importFrom IRanges IRanges
 #' @importFrom BiocGenerics start<- end<-
 .insilicoRE <- function(genome, re){
-    re1 <- DigestDNA(re$site[1], genome, "position", "top")
-    re1 <- unlist(re1)
-    re1 <- data.frame(chr = sub("\\..*", "", names(re1)),
-                      pos = unlist(re1),
-                      re = "re1")
-    re2 <- DigestDNA(re$site[2], genome, "position", "top")
-    re2 <- unlist(re2)
-    re2 <- data.frame(chr = sub("\\..*", "", names(re2)),
-                      pos = unlist(re2),
-                      re = "re2")
-    re_sites <- rbind(re1, re2)
-    re_sites <- re_sites[order(re_sites$chr, re_sites$pos), ]
-    valid <- re_sites$re[1:(nrow(re_sites) - 1)] != re_sites$re[2:nrow(re_sites)]
-    valid_seg <- cbind(re_sites[c(valid, FALSE), ], re_sites[c(FALSE, valid), ])
-    valid_seg <- valid_seg[valid_seg[, 1] == valid_seg[, 4], ]
-    valid_seg$strand <- "+"
-    valid_seg$strand[valid_seg[, 3] == "re2"] <- "-"
-    valid_seg <- GRanges(valid_seg[, 1],
-                         IRanges(valid_seg[, 2], valid_seg[, 5]),
-                         valid_seg$strand)
-    st <- as.character(strand(valid_seg))
-    start(valid_seg[st == "+"]) <- start(valid_seg[st == "+"]) - re$f[1]
-    end(valid_seg[st == "+"]) <- end(valid_seg[st == "+"]) + re$f[2]
-    start(valid_seg[st == "-"]) <- start(valid_seg[st == "-"]) - re$r[2]
-    end(valid_seg[st == "-"]) <- end(valid_seg[st == "-"]) + re$r[1]
+    if(nrow(re) == 1){
+        re_sites <- DigestDNA(re$site[1], genome, "position", "top")
+        re_sites <- unlist(re_sites)
+        re_sites <- data.frame(chr = sub("\\..*", "", names(re_sites)),
+                               pos = unlist(re_sites))
+        re_sites <- re_sites[order(re_sites$chr, re_sites$pos), ]
+        valid <- rep(TRUE, nrow(re_sites))
+        valid_seg <- cbind(re_sites[c(valid, FALSE), ], re_sites[c(FALSE, valid), ])
+        valid_seg <- valid_seg[valid_seg[, 1] == valid_seg[, 4], ]
+        valid_seg$strand <- c("+", "-")
+        valid_seg <- GRanges(valid_seg[, 1],
+                             IRanges(valid_seg[, 2], valid_seg[, 5]),
+                             valid_seg$strand)
+        st <- as.character(strand(valid_seg))
+        start(valid_seg[st == "+"]) <- start(valid_seg[st == "+"]) - re$f[1]
+        end(valid_seg[st == "-"]) <- end(valid_seg[st == "-"]) + re$r[1]
+        
+    } else if (nrow(re) == 2){
+        re1 <- DigestDNA(re$site[1], genome, "position", "top")
+        re1 <- unlist(re1)
+        re1 <- data.frame(chr = sub("\\..*", "", names(re1)),
+                          pos = unlist(re1),
+                          re = "re1")
+        re2 <- DigestDNA(re$site[2], genome, "position", "top")
+        re2 <- unlist(re2)
+        re2 <- data.frame(chr = sub("\\..*", "", names(re2)),
+                          pos = unlist(re2),
+                          re = "re2")
+        re_sites <- rbind(re1, re2)
+        re_sites <- re_sites[order(re_sites$chr, re_sites$pos), ]
+        valid <- re_sites$re[1:(nrow(re_sites) - 1)] != re_sites$re[2:nrow(re_sites)]
+        valid_seg <- cbind(re_sites[c(valid, FALSE), ], re_sites[c(FALSE, valid), ])
+        valid_seg <- valid_seg[valid_seg[, 1] == valid_seg[, 4], ]
+        valid_seg$strand <- "+"
+        valid_seg$strand[valid_seg[, 3] == "re2"] <- "-"
+        valid_seg <- GRanges(valid_seg[, 1],
+                             IRanges(valid_seg[, 2], valid_seg[, 5]),
+                             valid_seg$strand)
+        st <- as.character(strand(valid_seg))
+        start(valid_seg[st == "+"]) <- start(valid_seg[st == "+"]) - re$f[1]
+        end(valid_seg[st == "+"]) <- end(valid_seg[st == "+"]) + re$f[2]
+        start(valid_seg[st == "-"]) <- start(valid_seg[st == "-"]) - re$r[2]
+        end(valid_seg[st == "-"]) <- end(valid_seg[st == "-"]) + re$r[1]
+    }
     return(valid_seg)
 }
 
@@ -373,12 +476,12 @@ digestGenome <- function(snps,
 #' Align simulated digested fragments.
 #' 
 #' @param dg A DG object. 
+#' @param out_dir A string to specify the output directory.
+#' @param out_fn A string to specify the prefix of output files.
 #' @param n_threads A integer to specify the number of threads to run the read
 #' alignment.
 #' @param indexing A logical value to indicate whether you need to build index 
 #' files of the merged genome the generated via `digestGenome()`.
-#' @param out_dir A string to specify the output directory.
-#' @param out_fn A string to specify the prefix of output files.
 #' @param reuse If TRUE, this function do not generate output files but reuse
 #' the files specified as out_fn in the out_dir directory.
 #' 
@@ -408,12 +511,13 @@ digestGenome <- function(snps,
 #' @export
 
 alignTAG <- function(dg,
-                     n_threads = 1,
-                     indexing = TRUE,
                      out_dir = "",
                      out_fn = "mcptaggr_aln",
+                     n_threads = 1,
+                     indexing = TRUE,
                      reuse = FALSE){
     stopifnot(inherits(dg, "DG"))
+    dir.create(out_dir, showWarnings = FALSE)
     pre_fn <- sub(".*\\/", "", sub("\\.fa.gz", "", dg$genome))
     index_fn <- paste(out_dir, pre_fn, collapse = "/")
     bam_fn <- paste(out_dir, 
@@ -580,6 +684,7 @@ mergeGenome <- function(snps,
                         out_fn = "merged_genome",
                         indexing = TRUE){
     stopifnot(inherits(snps, "SNPs"))
+    dir.create(out_dir, showWarnings = FALSE)
     ref_genome <- readDNAStringSet(ref_fn)
     alt_genome <- readDNAStringSet(alt_fn)
     rgn <- names(ref_genome)
@@ -619,6 +724,65 @@ mergeGenome <- function(snps,
 }
 
 
+#' List up FASTQ files to be processed
+#' 
+#' Find FASTQ files in the specified directory and make a list of FASTQ files.
+#' 
+#' @param in_dir A string to indicate the path to the directory storing FASTQ files.
+#' @param pattern A string to specify the pattern that should be contained in 
+#' the FASTQ file names to be returned.
+#' @param ignore A string to specify the pattern that should not be contained in 
+#' the FASTQ file names to be returned.
+#' 
+#' @return A data.frame indicating FASTQ files and sample IDs.
+#' 
+#' @details This function searches the files with the .fq or .fastq extension.
+#' Compressed files with the .gz extension can also be detected.  Samples IDs 
+#' are automatically obtained by removing characters after _ in the FASTQ file 
+#' names. The strings specified to `pattern` and `ignore` will be used to 
+#' specify the `pattern` argument in the `grep()` function. The FASTQ files 
+#' listed by `findFASTQ()` should be a set of a single file for each sample, 
+#' each file of which is of a single end FASTQ or merged pair end FASTQ files, 
+#' or a set of a pair of files for each samples, each file of which is of a pair 
+#' end FASTQ file.
+#' 
+#' @examples 
+#' \dontrun{
+#' in_dir <- "path/to/directory/containing/FASTQ_files"
+#' pattern <- "pattern_in_filename_should_be_matched"
+#' ignore <- "pattern_in_filename_should_not_be_matched"
+#' fq_list <- findFASTQ(in_dir, pattern, ignore)
+#' }
+#' 
+findFASTQ <- function(in_dir, pattern = NULL, ignore = NULL){
+    out <- list.files(in_dir, "\\.fq|\\.fastq")
+    if(!is.null(pattern)){
+        out <- grep(pattern, out, value = TRUE)
+    }
+    if(!is.null(ignore)){
+        out <- grep(ignore, out, value = TRUE, invert = TRUE)
+    }
+    out <- sort(out)
+    ids <- gsub("_.*", "", out)
+    dup <- duplicated(ids)
+    n_dup <- sum(dup)
+    if(n_dup == 0){
+        message("FASTQ files are provided as a single file for each sample")
+        out <- data.frame(fq_name = out, id = ids)
+    } else if(n_dup == length(dup)/2){
+        message("FASTQ files are provided as a pair of files for each sample")
+        fq1 <- grep("1\\.", out, value = TRUE)
+        fq2 <- grep("2\\.", out, value = TRUE)
+        ids <- ids[dup]
+        out <- data.frame(fq1 = fq1, fq2 = fq2, id = ids)
+    } else {
+        stop("Cannot identify the files are provided as a single file or ",
+             "a pair of files for each sample.",
+             "\nSome samples have two FASTQ files, while the othres have a ",
+             "single FASTQ file.")
+    }
+    return(out)
+}
 ################################################################################
 # Count reads
 #'　
@@ -678,6 +842,7 @@ mcptagg <- function(mcptag,
     if(length(n_parallel) == 1){
         n_parallel <- c(n_parallel, n_parallel)
     }
+    dir.create(out_dir, showWarnings = FALSE)
     aln_dir <- paste(out_dir, "aln", sep = "/")
     dir.create(aln_dir, showWarnings = FALSE)
     if(is.null(bam_list)){
