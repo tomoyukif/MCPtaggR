@@ -1,5 +1,6 @@
 # MCPtaggR
 ![MCPtaggR_icon](https://github.com/tomoyukif/MCPtaggR/blob/main/inst/MCPtaggR_Icon.png?raw=true)
+
 A package to conduct mappable-collinear-polymorphic tags genotyping.
 
 ## Introduction
