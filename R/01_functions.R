@@ -47,7 +47,7 @@ run_mummer <- function(ref_fn,
     
     # Run nucmer
     command <- paste(mummer_dir, "nucmer", sep = "/")
-    out_p <- paste(out_dir, out_fn, collapse = "/")
+    out_p <- paste(out_dir, out_fn, sep = "/")
     args <- paste("--maxmatch", "-g 1000", "-p", out_p , ref_fn, alt_fn)
     system2(command, args)
     
@@ -66,7 +66,6 @@ run_mummer <- function(ref_fn,
     
     # Run show-snps
     command <- paste(mummer_dir, "show-coord", sep = "/")
-    filt_fn <- paste0(out_dir, "/", out_fn, ".filt")
     coord_fn <- paste0(out_p, ".coord")
     args <- paste("-Tlr", filt_fn, ">", coord_fn)
     system2(command, args)
@@ -202,7 +201,7 @@ mummer2SNPs <- function(mummer_fn){
 #' 
 #' @export
 #' 
-makeRE <- function(re_names, re_sites){
+makeRE <- function(re_names = NULL, re_sites = NULL){
     if(is.null(re_sites) & !is.null(re_names)){
         stopifnot(length(re_names) %in% c(1, 2))
         if("PstI" %in% re_names){
@@ -429,15 +428,20 @@ digestGenome <- function(snps,
         re_sites <- data.frame(chr = sub("\\..*", "", names(re_sites)),
                                pos = unlist(re_sites))
         re_sites <- re_sites[order(re_sites$chr, re_sites$pos), ]
-        valid <- rep(TRUE, nrow(re_sites))
-        valid_seg <- cbind(re_sites[c(valid, FALSE), ], re_sites[c(FALSE, valid), ])
-        valid_seg <- valid_seg[valid_seg[, 1] == valid_seg[, 4], ]
-        valid_seg$strand <- c("+", "-")
+        valid <- rep(TRUE, nrow(re_sites) - 1)
+        valid_seg <- cbind(re_sites[c(valid, FALSE), ],
+                           re_sites[c(FALSE, valid), ])
+        valid_seg <- valid_seg[valid_seg[, 1] == valid_seg[, 3], ]
+        valid_seg <- valid_seg[rep(seq_len(nrow(valid_seg)), each = 2), ]
+        valid_seg$strand <- "+"
+        valid_seg$strand[c(FALSE, TRUE)] <- "-"
         valid_seg <- GRanges(valid_seg[, 1],
-                             IRanges(valid_seg[, 2], valid_seg[, 5]),
+                             IRanges(valid_seg[, 2], valid_seg[, 4]),
                              valid_seg$strand)
         st <- as.character(strand(valid_seg))
         start(valid_seg[st == "+"]) <- start(valid_seg[st == "+"]) - re$f[1]
+        end(valid_seg[st == "+"]) <- end(valid_seg[st == "+"]) + re$r[1]
+        start(valid_seg[st == "-"]) <- start(valid_seg[st == "-"]) - re$f[1]
         end(valid_seg[st == "-"]) <- end(valid_seg[st == "-"]) + re$r[1]
         
     } else if (nrow(re) == 2){
@@ -509,7 +513,6 @@ digestGenome <- function(snps,
 #' @importFrom Rsubread buildindex align
 #' @importFrom Rsamtools sortBam
 #' @export
-
 alignTAG <- function(dg,
                      out_dir = "",
                      out_fn = "mcptaggr_aln",
@@ -518,11 +521,10 @@ alignTAG <- function(dg,
                      reuse = FALSE){
     stopifnot(inherits(dg, "DG"))
     dir.create(out_dir, showWarnings = FALSE)
-    pre_fn <- sub(".*\\/", "", sub("\\.fa.gz", "", dg$genome))
-    index_fn <- paste(out_dir, pre_fn, collapse = "/")
+    index_fn <- paste(out_dir, out_fn, sep = "/")
     bam_fn <- paste(out_dir, 
-                    paste0(pre_fn, c("_ref.bam", "_alt.bam")),
-                    collapse = "/")
+                    paste0(out_fn, c("_ref.bam", "_alt.bam")),
+                    sep = "/")
     
     if(!reuse | !all(file.exists(bam_fn))){
         if(indexing){
@@ -705,10 +707,10 @@ mergeGenome <- function(snps,
     seqlevels(snps$ref) <- paste0("ref_", rsn)
     seqlevels(snps$alt) <- paste0("alt_", asn)
     genome <- c(ref_genome, alt_genome)
-    genome_fn <- paste0(out_dir, "/merge.fa.gz")
+    genome_fn <- paste0(out_dir, "/", out_fn, ".fa.gz")
     writeXStringSet(genome, genome_fn,
                     compress = TRUE, format = "fasta")
-    index_fn <- paste0(out_dir, "/merge")
+    index_fn <- paste0(out_dir, "/", out_fn)
     if(indexing){
         buildindex(index_fn, genome_fn)
         

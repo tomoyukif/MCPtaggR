@@ -103,7 +103,7 @@ ar <- alignTAG(dg, out_dir, out_fn)
 
 Evaluate mappability of tags.
 ```{r eval=FALSE}
-mcptagg <- findValidSNP(ar, dg)
+mcptagg <- findMCPtag(ar, dg)
 ```
 
 Count reads on the MCPtags.
