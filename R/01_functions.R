@@ -300,7 +300,7 @@ digestGenome <- function(snps,
                          read_len = 150, 
                          re,
                          fragment_len = c(0, 1000),
-                         reuse = TRUE){
+                         reuse = FALSE){
     stopifnot(inherits(snps, "SNPs"))
     dir.create(out_dir, showWarnings = FALSE)
     
@@ -432,17 +432,13 @@ digestGenome <- function(snps,
         valid_seg <- cbind(re_sites[c(valid, FALSE), ],
                            re_sites[c(FALSE, valid), ])
         valid_seg <- valid_seg[valid_seg[, 1] == valid_seg[, 3], ]
-        valid_seg <- valid_seg[rep(seq_len(nrow(valid_seg)), each = 2), ]
         valid_seg$strand <- "+"
-        valid_seg$strand[c(FALSE, TRUE)] <- "-"
         valid_seg <- GRanges(valid_seg[, 1],
                              IRanges(valid_seg[, 2], valid_seg[, 4]),
                              valid_seg$strand)
         st <- as.character(strand(valid_seg))
         start(valid_seg[st == "+"]) <- start(valid_seg[st == "+"]) - re$f[1]
         end(valid_seg[st == "+"]) <- end(valid_seg[st == "+"]) + re$r[1]
-        start(valid_seg[st == "-"]) <- start(valid_seg[st == "-"]) - re$f[1]
-        end(valid_seg[st == "-"]) <- end(valid_seg[st == "-"]) + re$r[1]
         
     } else if (nrow(re) == 2){
         re1 <- DigestDNA(re$site[1], genome, "position", "top")
@@ -481,7 +477,6 @@ digestGenome <- function(snps,
 #' 
 #' @param dg A DG object. 
 #' @param out_dir A string to specify the output directory.
-#' @param out_fn A string to specify the prefix of output files.
 #' @param n_threads A integer to specify the number of threads to run the read
 #' alignment.
 #' @param indexing A logical value to indicate whether you need to build index 
@@ -515,15 +510,14 @@ digestGenome <- function(snps,
 #' @export
 alignTAG <- function(dg,
                      out_dir = "",
-                     out_fn = "mcptaggr_aln",
                      n_threads = 1,
                      indexing = TRUE,
                      reuse = FALSE){
     stopifnot(inherits(dg, "DG"))
     dir.create(out_dir, showWarnings = FALSE)
-    index_fn <- paste(out_dir, out_fn, sep = "/")
+    index_fn <- paste0(out_dir, "/merge")
     bam_fn <- paste(out_dir, 
-                    paste0(out_fn, c("_ref.bam", "_alt.bam")),
+                    c("merge_ref.bam", "merge_alt.bam"),
                     sep = "/")
     
     if(!reuse | !all(file.exists(bam_fn))){
@@ -756,8 +750,9 @@ mergeGenome <- function(snps,
 #' fq_list <- findFASTQ(in_dir, pattern, ignore)
 #' }
 #' 
+#' @export
 findFASTQ <- function(in_dir, pattern = NULL, ignore = NULL){
-    out <- list.files(in_dir, "\\.fq|\\.fastq")
+    out <- list.files(in_dir, "\\.fq|\\.fastq", full.names = TRUE)
     if(!is.null(pattern)){
         out <- grep(pattern, out, value = TRUE)
     }
@@ -765,7 +760,7 @@ findFASTQ <- function(in_dir, pattern = NULL, ignore = NULL){
         out <- grep(ignore, out, value = TRUE, invert = TRUE)
     }
     out <- sort(out)
-    ids <- gsub("_.*", "", out)
+    ids <-  gsub("_.*", "", basename(out))
     dup <- duplicated(ids)
     n_dup <- sum(dup)
     if(n_dup == 0){
