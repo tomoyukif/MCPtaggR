@@ -12,7 +12,7 @@ digestGenome(
   read_len = 150,
   re,
   fragment_len = c(0, 1000),
-  reuse = TRUE
+  reuse = FALSE
 )
 }
 \arguments{

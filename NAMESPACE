@@ -2,6 +2,7 @@
 
 export(alignTAG)
 export(digestGenome)
+export(findFASTQ)
 export(findMCPtag)
 export(makeRE)
 export(mcptagg)

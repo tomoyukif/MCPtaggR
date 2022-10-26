@@ -4,21 +4,12 @@
 \alias{alignTAG}
 \title{Align simulated digested fragments.}
 \usage{
-alignTAG(
-  dg,
-  out_dir = "",
-  out_fn = "mcptaggr_aln",
-  n_threads = 1,
-  indexing = TRUE,
-  reuse = FALSE
-)
+alignTAG(dg, out_dir = "", n_threads = 1, indexing = TRUE, reuse = FALSE)
 }
 \arguments{
 \item{dg}{A DG object.}
 
 \item{out_dir}{A string to specify the output directory.}
-
-\item{out_fn}{A string to specify the prefix of output files.}
 
 \item{n_threads}{A integer to specify the number of threads to run the read
 alignment.}
