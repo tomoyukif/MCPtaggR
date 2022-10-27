@@ -13,6 +13,16 @@ mcptagg(
   vcf = FALSE,
   bam_list = NULL
 )
+
+mcptagg(
+  mcptag,
+  fq_list,
+  out_dir = "",
+  n_threads = 1,
+  n_parallel = 2,
+  vcf = FALSE,
+  bam_list = NULL
+)
 }
 \arguments{
 \item{mcptag}{A MCPtag class object.}
@@ -36,8 +46,13 @@ been created via read alignment.}
 \value{
 A vector of string(s) indicating the path(s) of the output GDS file
 and the output VCF file if \code{vcf = TRUE}.
+
+A vector of string(s) indicating the path(s) of the output GDS file
+and the output VCF file if \code{vcf = TRUE}.
 }
 \description{
+Align reads on the MCPtags and count the mapped reads.
+
 Align reads on the MCPtags and count the mapped reads.
 }
 \details{
@@ -49,8 +64,27 @@ access a GDS file using the \code{gdsfmt} package. \code{SeqArray} and \code{SNP
 provide functions to manipulate a GDS file. \code{GBScleanR} enable you to
 estimate true genotypes, haplotypes, and dosages at markers using
 an error-prone aware hidden Markov model.
+
+Align reads by the \code{Rsubread::align()} on the MCPtags prepared by
+\code{findMCPtag()} or \code{mergeGenome()}. This function output bam files into
+\code{out_dir} and the result of SNP calling and read counts as a GDS file. A GDS
+file is the file formatted in the Genomic Data Structure format. You can
+access a GDS file using the \code{gdsfmt} package. \code{SeqArray} and \code{SNPRelate} also
+provide functions to manipulate a GDS file. \code{GBScleanR} enable you to
+estimate true genotypes, haplotypes, and dosages at markers using
+an error-prone aware hidden Markov model.
 }
 \examples{
+\dontrun{
+out_fn <- mcptagg(mcptag = mcptag,
+                  fq_list = fq_list,
+                  out_dir = "",
+                  n_threads = 10, 
+                  n_parallel = 5, 
+                  vcf = TRUE, 
+                  bam_list = NULL)
+}
+　
 \dontrun{
 out_fn <- mcptagg(mcptag = mcptag,
                   fq_list = fq_list,

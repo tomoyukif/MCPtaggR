@@ -5,6 +5,8 @@
 \title{Execute MUMmer}
 \usage{
 run_mummer(ref_fn, alt_fn, mummer_dir, out_dir = "", out_fn = "mummer_out")
+
+run_mummer(ref_fn, alt_fn, mummer_dir, out_dir = "", out_fn = "mummer_out")
 }
 \arguments{
 \item{ref_fn}{A string to specify the path to the reference genome fasta.}
@@ -21,8 +23,13 @@ show-coords exist.}
 }
 \value{
 a vector of strings indicating the paths to the output files.
+
+a vector of strings indicating the paths to the output files.
 }
 \description{
+A wrapper function to execute MUMmer from an R environment. This function
+requires the path of the MUMmer executable file on your system.
+
 A wrapper function to execute MUMmer from an R environment. This function
 requires the path of the MUMmer executable file on your system.
 }
@@ -38,8 +45,28 @@ MUMmer on repetitive sequences will take longer execution time.
 Masking repetitive sequences is highly recommended before running MUMmer.
 Please run RepeatMasker or a similar tool on your genomes first, and then
 use the masked genome sequences as input to \code{run_mummer()}.
+
+MUMmer is a tool to compare a genome sequence against another
+and detect identical genomic region between the given genomes. In addition,
+the tool also detect polymorphisms and structural variations. Thus,
+\code{run_mummer} requires a reference genome fasta and another to be specified as
+\code{ref_fn} and \code{alt_fn}. The alleles found in the reference genome would be listed as
+reference alleles in the output vcf file of \code{mcptagg()}, whereas the alleles
+found in another specified as \code{alt_fn} would be alternative alleles. Running
+MUMmer on repetitive sequences will take longer execution time.
+Masking repetitive sequences is highly recommended before running MUMmer.
+Please run RepeatMasker or a similar tool on your genomes first, and then
+use the masked genome sequences as input to \code{run_mummer()}.
 }
 \examples{
+\dontrun{
+mummer_out <- run_mummer(ref_fn = "reference_genome.fa",
+                         alt_fn = "alternative_genome.fa",
+                         mummer_dir = "path/to/mummer",
+                         out_dir = "mummer_out",
+                         out_fn = "mummer_result")
+}
+
 \dontrun{
 mummer_out <- run_mummer(ref_fn = "reference_genome.fa",
                          alt_fn = "alternative_genome.fa",
