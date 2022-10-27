@@ -1301,8 +1301,8 @@ digestGenome <- function(snps,
     
     ref_genome <- readDNAStringSet(ref_fn)
     alt_genome <- readDNAStringSet(alt_fn)
-    ref_genome <- ref_genome[grepl(ref_pat, ref_genome)]
-    alt_genome <- alt_genome[grepl(alt_pat, alt_genome)]
+    ref_genome <- ref_genome[grepl(ref_pat, names(ref_genome))]
+    alt_genome <- alt_genome[grepl(alt_pat, names(alt_genome))]
     if(length(ref_genome) != length(alt_genome)){
         stop("The number of chromosomes does not match between the reference",
              " and the alternative genomes.", 
