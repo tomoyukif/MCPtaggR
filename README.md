@@ -30,6 +30,25 @@ error prone markers from your resultant genotype data obtained via a
 NGS-based genotyping technique, comapred to the result produced by the 
 conventional pipeline that aligns reads on one reference genome.
 
+## Prerequisit
+MCPtaggR requires some Bioconductor packages.
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("GenomicAlignments")
+BiocManager::install("GenomicRanges")
+BiocManager::install("gdsfmt")
+BiocManager::install("SeqArray")
+BiocManager::install("SNPRelate")
+BiocManager::install("Rsubread")
+BiocManager::install("Rsamtools")
+BiocManager::install("DECIPHER")
+BiocManager::install("BSgenome")
+
+In addition, the Rsubread package requires the subread software installed.
+Please check the [subread users guide](https://subread.sourceforge.net/SubreadUsersGuide.pdf).
+
+
 ## Installation
 You can install `MCPtaggR` from the GitHub repository.
 ```
