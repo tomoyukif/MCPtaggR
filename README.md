@@ -32,6 +32,7 @@ conventional pipeline that aligns reads on one reference genome.
 
 ## Prerequisit
 MCPtaggR requires some Bioconductor packages.
+```
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
@@ -44,6 +45,7 @@ BiocManager::install("Rsubread")
 BiocManager::install("Rsamtools")
 BiocManager::install("DECIPHER")
 BiocManager::install("BSgenome")
+```
 
 In addition, the Rsubread package requires the subread software installed.
 Please check the [subread users guide](https://subread.sourceforge.net/SubreadUsersGuide.pdf).

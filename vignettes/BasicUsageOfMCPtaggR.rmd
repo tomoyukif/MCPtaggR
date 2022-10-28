@@ -91,14 +91,14 @@ Execute in-silico digestion of the given genomes.
 read_len <- 150
 re_names <- c("PstI", "MspI")
 re <- makeRE(re_names)
-fragment_lne = c(0, 1000)
-dg <- digestGenome(snps, ref_fn, alt_fn, out_dir, read_len, re, fragment_len)
+fragment_len = c(0, 1000)
+out_fn <- "dgout"
+dg <- digestGenome(snps, ref_fn, alt_fn, out_dir, out_fn, read_len, re, fragment_len)
 ```
 
 Align the simulated digested fragments to the given genomes.
 ```{r eval=FALSE}
-fragment_lne = c(0, 1000)
-ar <- alignTAG(dg, out_dir, out_fn)
+ar <- alignTAG(dg, out_dir)
 ```
 
 Evaluate mappability of tags.
