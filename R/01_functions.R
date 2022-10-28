@@ -1761,7 +1761,7 @@ findFASTQ <- function(in_dir, pattern = NULL, ignore = NULL){
         out <- grep(ignore, out, value = TRUE, invert = TRUE)
     }
     out <- sort(out)
-    ids <-  gsub("_.*", "", basename(out))
+    ids <-  gsub("_R?[1|2]\\..*", "", basename(out))
     dup <- duplicated(ids)
     n_dup <- sum(dup)
     if(n_dup == 0){
