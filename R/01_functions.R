@@ -65,7 +65,7 @@ run_mummer <- function(ref_fn,
     system2(command, args)
     
     # Run show-snps
-    command <- paste(mummer_dir, "show-coord", sep = "/")
+    command <- paste(mummer_dir, "show-coords", sep = "/")
     coord_fn <- paste0(out_p, ".coord")
     args <- paste("-Tlr", filt_fn, ">", coord_fn)
     system2(command, args)
@@ -1874,7 +1874,7 @@ mcptagg <- function(mcptag,
         aln <- align(index_fn, fq_fn[1], type = "dna",
                      output_file = bam_fn,
                      nthreads = n_threads, maxMismatches = 0, unique = TRUE,
-                     indels = 0)
+                     indels = 0, )
         
     } else {
         bam_fn <- paste0(aln_dir, "/", fq_fn[3], ".bam")
@@ -1891,7 +1891,7 @@ mcptagg <- function(mcptag,
 #' @importFrom GenomicRanges grglist findOverlaps
 #' @importFrom S4Vectors subjectHits
 .countReads <- function(mcptag, bam_fn, rnaseq){
-    ga <- readGAlignments(file = bam_fn)
+    ga <- readGAlignments(file = bam_fn, param = ScanBamParam(what = scanBamWhat()))
     if(rnaseq){
         incomple <- grepl("S|I|D|H|P|X", cigar(ga))
         ga <- ga[!incomple]
