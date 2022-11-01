@@ -5,8 +5,6 @@
 \title{Align simulated digested fragments.}
 \usage{
 alignTAG(dg, out_dir = "", n_threads = 1, indexing = TRUE, reuse = FALSE)
-
-alignTAG(dg, out_dir = "", n_threads = 1, indexing = TRUE, reuse = FALSE)
 }
 \arguments{
 \item{dg}{A DG object.}
@@ -24,12 +22,8 @@ the files specified as out_fn in the out_dir directory.}
 }
 \value{
 A AR class object used in \code{mcptagg()}.
-
-A AR class object used in \code{mcptagg()}.
 }
 \description{
-Align simulated digested fragments.
-
 Align simulated digested fragments.
 }
 \details{
@@ -41,26 +35,8 @@ you run \code{alignTAG()} on the merged genome first time, \code{indexing = TRUE
 should always be specified. \code{reuse = TRUE} can omit the indexinig step if you
 already have the index files for the merged genome that is pointed by the GD
 class object.
-
-An input DG class object has a string indicating the path to
-the merged genome that was generated via \code{digestGenome()} and contains genome
-sequences of both genomes specified as \code{ref_fn} and \code{alt_fn} to run
-\code{digestGenome()}. The merged genome has to be indexed for read alignment. If
-you run \code{alignTAG()} on the merged genome first time, \code{indexing = TRUE}
-should always be specified. \code{reuse = TRUE} can omit the indexinig step if you
-already have the index files for the merged genome that is pointed by the GD
-class object.
 }
 \examples{
-\dontrun{
-ar <- alignTAG(dg = dg, 
-               n_threads = 10, 
-               indexing = TRUE,
-               out_dir = "outdir",
-               out_fn = "out",
-               reuse = FALSE)
-}
-
 \dontrun{
 ar <- alignTAG(dg = dg, 
                n_threads = 10, 

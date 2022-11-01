@@ -9,23 +9,6 @@ digestGenome(
   ref_fn,
   alt_fn,
   out_dir = "",
-  out_fn = "",
-  ref_pat = "",
-  alt_pat = "",
-  read_len = 150,
-  re,
-  fragment_len = c(0, 1000),
-  reuse = FALSE
-)
-
-digestGenome(
-  snps,
-  ref_fn,
-  alt_fn,
-  out_dir = "",
-  out_fn = "",
-  ref_pat = "",
-  alt_pat = "",
   read_len = 150,
   re,
   fragment_len = c(0, 1000),
@@ -35,17 +18,11 @@ digestGenome(
 \arguments{
 \item{snps}{A SNPs object.}
 
-\item{ref_fn}{A path to a reference genome FASTA.}
+\item{ref_fn}{A string to specify the path to the reference genome FASTA.}
 
-\item{alt_fn}{A path to an alternative genome FASTA.}
+\item{alt_fn}{A string to specify the path to the alternative genome FASTA.}
 
-\item{out_dir}{A path to the output directory.}
-
-\item{out_fn}{A prefix of the output file names.}
-
-\item{ref_pat}{A string to specify a pattern to subset the reference genome data.}
-
-\item{alt_pat}{A string to specify a pattern to subset the alternative genome data.}
+\item{out_dir}{A string to specify the output directory.}
 
 \item{read_len}{The maximum length of reads in FASTQ to be mapped on the
 genomes in the read mapping step.}
@@ -62,13 +39,8 @@ previous execution of \code{digestGenome()}.}
 }
 \value{
 A DG object that is required to run \code{alignTAG()}
-
-A DG object that is required to run \code{alignTAG()}
 }
 \description{
-Search recognition sites of the specified restriction enzymes in the given
-genome sequences and generate FASTA files of the simulated digested fragments.
-
 Search recognition sites of the specified restriction enzymes in the given
 genome sequences and generate FASTA files of the simulated digested fragments.
 }
@@ -78,25 +50,8 @@ restriction enzymes, read length, and fragment lengths that were used and
 sequenced in your NGS run. If you applied size selection on your sequencing
 library during library preparation, \code{fragment_len} should match with the
 range of the size selection you did.
-
-The \code{re}, \code{read_len}, and \code{fragment_len} arguments should match with the
-restriction enzymes, read length, and fragment lengths that were used and
-sequenced in your NGS run. If you applied size selection on your sequencing
-library during library preparation, \code{fragment_len} should match with the
-range of the size selection you did.
 }
 \examples{
-\dontrun{
-dg <- digestGenome(snps = snps, 
-                   ref_fn = "path/to/ref.fa",
-                   alt_fn = "path/to/alt.fa",
-                   out_dir = "outdir", 
-                   read_len = 150,
-                   re = re,
-                   fragment_len = c(100, 600), 
-                   reuse = FALSE)
-}
-
 \dontrun{
 dg <- digestGenome(snps = snps, 
                    ref_fn = "path/to/ref.fa",

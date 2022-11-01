@@ -5,8 +5,6 @@
 \title{Find mappable-collinear-polymorphic tags}
 \usage{
 findMCPtag(ar, dg)
-
-findMCPtag(ar, dg)
 }
 \arguments{
 \item{ar}{An AR class object produced by \code{alignTAG()}.}
@@ -15,13 +13,8 @@ findMCPtag(ar, dg)
 }
 \value{
 A MCPtag classs object.
-
-A MCPtag classs object.
 }
 \description{
-Find mappable-collinear-polymorphic tags (MCPtags) based on the information
-given by the AR and GD class object
-
 Find mappable-collinear-polymorphic tags (MCPtags) based on the information
 given by the AR and GD class object
 }
@@ -32,19 +25,8 @@ to be used for genotyping a given population derived from a cross between
 founders having the reference genome and the alternative genome that were
 specified as \code{ref_fn} and \code{alt_fn} in \code{run_mummer()}, \code{digestGenome()}, and
 \code{alignTAG()}.
-
-Based on the alignment results of simulated digested genome,
-this function list up mappable-collibear-polymorphic tags that are validated
-to be used for genotyping a given population derived from a cross between
-founders having the reference genome and the alternative genome that were
-specified as \code{ref_fn} and \code{alt_fn} in \code{run_mummer()}, \code{digestGenome()}, and
-\code{alignTAG()}.
 }
 \examples{
-\dontrun{
-mcptag <- findMCPtag(ar = ar, dg = dg)
-}
-
 \dontrun{
 mcptag <- findMCPtag(ar = ar, dg = dg)
 }
