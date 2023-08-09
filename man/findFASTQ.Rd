@@ -4,7 +4,7 @@
 \alias{findFASTQ}
 \title{List up FASTQ files to be processed}
 \usage{
-findFASTQ(in_dir, pattern = NULL, ignore = NULL)
+findFASTQ(in_dir, pattern = NULL, ignore = NULL, id = NULL)
 }
 \arguments{
 \item{in_dir}{A string to indicate the path to the directory storing FASTQ files.}

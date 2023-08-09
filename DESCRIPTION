@@ -14,5 +14,5 @@ Imports: BSgenome, BiocGenerics, Biostrings, DECIPHER, GenomeInfoDb,
     SNPRelate, SeqArray, XVector, data.table, dplyr, gdsfmt, methods
 Suggests: testthat (>= 3.0.0), knitr, rmarkdown
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.3
 VignetteBuilder: knitr

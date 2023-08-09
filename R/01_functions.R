@@ -751,7 +751,7 @@ mergeGenome <- function(snps,
 #' }
 #' 
 #' @export
-findFASTQ <- function(in_dir, pattern = NULL, ignore = NULL){
+findFASTQ <- function(in_dir, pattern = NULL, ignore = NULL, id = NULL){
     out <- list.files(in_dir, "\\.fq|\\.fastq", full.names = TRUE)
     if(!is.null(pattern)){
         out <- grep(pattern, out, value = TRUE)
@@ -760,7 +760,12 @@ findFASTQ <- function(in_dir, pattern = NULL, ignore = NULL){
         out <- grep(ignore, out, value = TRUE, invert = TRUE)
     }
     out <- sort(out)
-    ids <-  gsub("_.*", "", basename(out))
+    if(!is.null(id)){
+        ids <-  gsub("_.*", "", basename(out))
+        ids <- sub(id, "", ids)
+    } else {
+        ids <-  gsub("_.*", "", basename(out))
+    }
     dup <- duplicated(ids)
     n_dup <- sum(dup)
     if(n_dup == 0){
@@ -856,7 +861,7 @@ mcptagg <- function(mcptag,
     count_matrix <- NULL
     for(i in seq_len(nrow(bam_list))){
         count_matrix <- cbind(count_matrix,
-                              .countReads(mcptag, bam_list[i, 1], 
+                              .countReads(mcptag, bam_fn = bam_list[i, 1], 
                                           rnaseq = FALSE))
     }
     
