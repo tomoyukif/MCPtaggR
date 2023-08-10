@@ -7,14 +7,14 @@ author:
 date: "August 9, 2023"
 package: MCPtaggR
 output: 
-  BiocStyle::pdf_document: 
   BiocStyle::html_document:
     toc: true
     toc_float: true
+  BiocStyle::pdf_document: 
 vignette: >
   %\VignetteIndexEntry{Basic usage of MCPtaggR}
-  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
 ---
 ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(fig.pos = 'H', fig.align = "center", warning = FALSE, message = FALSE)
