@@ -52,6 +52,8 @@ BiocManager::install("BSgenome")
 In addition, the Rsubread package requires the subread software installed.
 Please check the [subread users guide](https://subread.sourceforge.net/SubreadUsersGuide.pdf).
 
+MCPtaggR also needs MUMmer for the collinear block detection. Please visit the 
+[MUMmer webpage](https://mummer4.github.io/install/install.html).
 
 ## Installation
 You can install `MCPtaggR` from the GitHub repository.
