@@ -62,10 +62,7 @@ if (!requireNamespace("devtools", quietly = TRUE))
 devtools::install_github("tomoyukif/MCPtaggR", build_vignettes = FALSE)
 ```
 
-For more information see the [vignette](https://github.com/tomoyukif/MCPtaggR/blob/main/vignettes/BasicUsageOfMCPtaggR.pdf) or run the following code on a R console.
-```
-browseVignettes(package = "MCPtaggR")
-```
+For more information see the [vignette](https://github.com/tomoyukif/MCPtaggR/blob/main/vignettes/BasicUsageOfMCPtaggR.pdf).
 
 ## Citations
 In preparation for publication...
