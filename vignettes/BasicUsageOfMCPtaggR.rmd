@@ -4,7 +4,7 @@ author:
   -name: "Tomoyuki Furuta"
   affiliation: Institute of Plant Science and Resources, Okayama University, Okayama, Japan
   email: f.tomoyuki@okayama-u.ac.jp
-date: "August 9, 2023"
+date: "November 8, 2023"
 package: MCPtaggR
 output: 
   BiocStyle::html_document:
@@ -55,6 +55,13 @@ two tools on your system and make sure their executable files can be executed
 from your R environment. 
 For installation of MUMmer, please visit [MUMmer's web site](https://mummer4.github.io/install/install.html).
 For installation of Subread, please see [the vignette of Rsubread](https://bioconductor.org/packages/release/bioc/vignettes/Rsubread/inst/doc/SubreadUsersGuide.pdf).
+Briefly, once the executable files of the MUMmer suite were compiled in a 
+directory, these files are available from MCPtaggR simply by specifying the 
+directory path to the mummer_dir argument of the run_mummer() function. If you 
+got a permission error for the MUMmer functions, change the permission settings of 
+the compiled executable files to allow R to execute them. For Subreads, the 
+instructions available at the above link will make the Subread
+functions executable by MCPtaggR via the functions of the Rsubread package.
 
 # Installation
 You can install `MCPtaggR` from the GitHub repository.
@@ -66,14 +73,15 @@ devtools::install_github("tomoyukif/MCPtaggR", build_vignettes = FALSE)
 ```
 
 # The basic pipeline
-Load the package.
+### Load the package.
 ```{r warning=FALSE, message=FALSE}
 library("MCPtaggR")
 ```
 <br>
 <br>
 
-Set paths to input files.
+## Run MUMmer
+### Set paths to input files.
 ```{r}
 # Path to a directory containing FASTQ files
 fq_dir <- system.file("extdata/fastq", package = "MCPtaggR")
@@ -88,16 +96,29 @@ alt_fn <- system.file("extdata/ref/ol_genome_chr.masked.fa.gz",
 
 # Path to a directory containing MUMmer executable files
 mummer_dir <- system.file("extdata/MUMmer3.23", package = "MCPtaggR")
+
+# Path to an output directory. Set a path that you want to save outputs.
 out_dir <- tempdir()
 ```
+MUMmer executable files will be installed together with the MCPtaggR package. 
+The directory path for these files can be obtained by the code shown above.
+However, these files were compiled on a Linux system with Ubuntu 22.04. There 
+is no guarantee that these are also executable on your system and, off course, 
+these won't run on Windows and Mac. Please compile executable files on your 
+machine and set the mummer_dir argument of the run_mummer() function to the 
+directory where the executable files are stored.
 <br>
 <br>
 
-Run MUMmer.
+### Call the MUMmer suite from R
 ```{r eval=FALSE}
 out_fn <- "mummer_out"
+
+# Decompress FASTA files is needed
 R.utils::gunzip(ref_fn, overwrite = TRUE, remove = FALSE)
 R.utils::gunzip(alt_fn, overwrite = TRUE, remove = FALSE)
+
+# Set FASTA file names again with removing the .gz suffix.
 ref_fn <- sub("\\.gz", "", ref_fn)
 alt_fn <- sub("\\.gz", "", alt_fn)
 mummer_fn <- run_mummer(ref_fn = ref_fn, alt_fn = alt_fn,
@@ -107,7 +128,9 @@ mummer_fn <- run_mummer(ref_fn = ref_fn, alt_fn = alt_fn,
 <br>
 <br>
 
-You can use pre-calculated mummer outputs from installation directory of MCPtaggR.
+You can use pre-calculated mummer outputs from installation directory of MCPtaggR as demo data.
+These mummer outputs were obtained from the comparison between *Oryza staiva* cv. Nipponbare and
+*O. longistaminata*
 ```{r}
 mummer_fn <- c(system.file("extdata/mummer/ol2nb_mcptagg.snps.gz", 
                            package = "MCPtaggR"),
@@ -121,8 +144,16 @@ Import and organize information of SNPs in collinear blocks.
 ```{r eval=FALSE}
 snps <- mummer2SNPs(mummer_fn = mummer_fn)
 ```
+The mummer_fn argument requires as input a vector of two strings: .snps and 
+.coord files geenrated by MUMmer. The run_mummer() function returns the vector 
+that can be supplied to the mummer2SNPs() function as input.
 <br>
 <br>
+
+
+
+## Find MCP tags
+### In silico genome digestion
 Execute in-silico digestion of the given genomes.
 ```{r eval=FALSE}
 read_len <- 150
@@ -134,7 +165,19 @@ dg <- digestGenome(snps = snps, ref_fn = ref_fn, alt_fn = alt_fn,
                    out_dir = out_dir, read_len = read_len, 
                    re = re, fragment_len = fragment_len)
 ```
+You should set the `read_len` argument to the maximum sequencing read length in 
+your FASTQ files to be analyzed. The digestGenome function generates the MCP 
+tags with the length of `read_len` bp at maximum, which will be used for 
+genotype calling. The fragment_len argument requires a vector of two integers that 
+is used to filter out the in-silico digested genome fragments to generate MCP 
+tags. If in-silico digested genome fragments were shorter than `fragment_len[1]`
+or longer than `fragment_len[1]`, these fragments will be discarded from the 
+MCP tag generation step and will not be used for genotype calling. You also 
+need to specify the `re` argument that specify the pattern of in-silico 
+digestion. You can make an input for this argument by the `makeRE()` function as
+described below.
 <br>
+
 The function `makeRE()` outputs a data.frame that specify how restriction 
 enzymes cut DNA sequences as shown below. 
 ```{r}
@@ -156,30 +199,59 @@ Currently, `makeRE()` only supports KpnI, PstI, MspI and ApeKI for the `re_names
 argument. For other restriction enzymes, please specify recognition sequences to 
 the `re_sites` argument, e.g. `re_sites = c("G/AATTC", "A/AGCTT")` for 
 EcoRI and HindIII.
+```{r}
+makeRE(re_sites = c("G/AATTC", "A/AGCTT"))
+```
 <br>
 <br>
 
+
+
+### Tag alignment
 Align the simulated digested fragments to the given genomes.
 ```{r eval=FALSE}
 ar <- alignTAG(dg = dg, out_dir = out_dir, 
                n_threads = 5, indexing = TRUE, reuse = TRUE)
 ```
+The `alignTAG()` function take an output object from the `digestGenome()` 
+function as a primary input. You can let the read alignment using the Rsubread 
+package run on multiple threads by setting the `n_threads` argument. If you set 
+`indexing = TRUE` (default), index files of the genomes will be generated. You 
+can set `indexing = FALSE` and skip the time consuming indexing step in 
+cases where you have already indexed the genomes using `alignTAG()` in the previous
+run. Similarly, you can skip the time consuming tag alignment step by setting 
+`reuse = FALSE`. The settings `indexing = FALSE` and `reuse = FALSE` will be
+ignored when the index files and the tag alignment files are not available at 
+the directory specified to `out_dir` and the indexing and tag alignment steps 
+will be performed.
 <br>
 <br>
 
-Evaluate mappability of tags.
+### Evaluate tags
+The `findMCPtag()` function summarizes the outputs of `alignTAG()` and `digestGenome()` and 
+find MCP tag to be used for genotype calling.
 ```{r eval=FALSE}
 mcptag <- findMCPtag(ar = ar, dg = dg)
 ```
 <br>
 <br>
 
-Count reads on the MCPtags.
+## Read mapping and genotype calling
+### Count reads on the MCPtags and call genotypes.
 ```{r eval=FALSE}
 fq_list <- findFASTQ(in_dir = fq_dir)
 mcptagg <- mcptagg(mcptag = mcptag, fq_list = fq_list, out_dir = out_dir, 
                    n_threads = 5, n_parallel = 3)
 ```
+The output of `findMCPtag()` should be supplied to the first argument `mcptag`.
+A data.frame with two or three columns where paths to read1,
+paths to read2 (optional), and sample names are listed is required to be set to
+the `fq_list` argument. You can make the read alignment using the Rsubread 
+package run on multiple threads by setting the `n_threads` argument. If you set 
+an integer greater than 1 to `n_parallel`, `n_parallel` processes of `n_threads`
+threads (requiring `n_parallel` x `n_threads` threads in total) will be executed.
+Parallelization of multithreading requires a large amount of RAM. Thus, please 
+set a small numbers to them first and check how much RAM are required.
 
 # Post genotype calling workflow
 

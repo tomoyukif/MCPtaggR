@@ -895,7 +895,8 @@ mcptagg <- function(mcptag,
 #' @importFrom GenomicRanges grglist findOverlaps
 #' @importFrom S4Vectors subjectHits
 .countReads <- function(mcptag, bam_fn, rnaseq){
-    ga <- readGAlignments(file = bam_fn)
+    ga <- readGAlignments(file = bam_fn, 
+                          param = ScanBamParam(tag = "NH"))
     if(rnaseq){
         incomple <- grepl("S|I|D|H|P|X", cigar(ga))
         ga <- ga[!incomple]
