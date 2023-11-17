@@ -54,7 +54,7 @@ run_mummer <- function(ref_fn,
     # Run delta-filter
     command <- paste(mummer_dir, "delta-filter", sep = "/")
     delta_fn <- paste0(out_dir, "/", out_fn, ".delta")
-    args <- paste("-1g", delta_fn, ">", paste0(out_p, ".filt"))
+    args <- paste("-1", delta_fn, ">", paste0(out_p, ".filt"))
     system2(command, args)
     
     # Run show-snps
@@ -64,7 +64,7 @@ run_mummer <- function(ref_fn,
     args <- paste("-CTlr", filt_fn, ">", snps_fn)
     system2(command, args)
     
-    # Run show-snps
+    # Run show-coords
     command <- paste(mummer_dir, "show-coords", sep = "/")
     coord_fn <- paste0(out_p, ".coord")
     args <- paste("-Tlr", filt_fn, ">", coord_fn)
