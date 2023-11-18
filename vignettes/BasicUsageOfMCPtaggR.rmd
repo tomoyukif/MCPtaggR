@@ -171,7 +171,7 @@ tags with the length of `read_len` bp at maximum, which will be used for
 genotype calling. The fragment_len argument requires a vector of two integers that 
 is used to filter out the in-silico digested genome fragments to generate MCP 
 tags. If in-silico digested genome fragments were shorter than `fragment_len[1]`
-or longer than `fragment_len[1]`, these fragments will be discarded from the 
+or longer than `fragment_len[2]`, these fragments will be discarded from the 
 MCP tag generation step and will not be used for genotype calling. You also 
 need to specify the `re` argument that specify the pattern of in-silico 
 digestion. You can make an input for this argument by the `makeRE()` function as

@@ -55,6 +55,11 @@ Please check the [subread users guide](https://subread.sourceforge.net/SubreadUs
 MCPtaggR also needs MUMmer for the collinear block detection. Please visit the 
 [MUMmer webpage](https://mummer4.github.io/install/install.html).
 
+Subread and MUMmer have to be executable from you R environment. Please check
+the Prerequisites section in the [vignette](https://tomoyukif.github.io/MCPtaggR/)
+for more information.
+
+
 ## Installation
 You can install `MCPtaggR` from the GitHub repository.
 ```
