@@ -72,4 +72,4 @@ devtools::install_github("tomoyukif/MCPtaggR", build_vignettes = FALSE)
 For more information see the [vignette](https://tomoyukif.github.io/MCPtaggR/).
 
 ## Citations
-In preparation for publication...
+Furuta, T. and Yamamoto, T., MCPtaggR: R package for accurate genotype calling in reduced representation sequencing data by eliminating error-prone markers based on genome comparison, DNA Research, Volume 31, Issue 1, February 2024, dsad027, https://doi.org/10.1093/dnares/dsad027
