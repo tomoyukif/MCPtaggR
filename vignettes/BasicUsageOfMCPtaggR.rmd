@@ -12,11 +12,11 @@ output:
     toc_float: true
   BiocStyle::pdf_document: 
 vignette: >
-  %\VignetteIndexEntry{Basic usage of MCPtaggR}
+%\VignetteIndexEntry{Basic usage of MCPtaggR}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
----
-```{r global_options, include=FALSE}
+  ---
+  ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(fig.pos = 'H', fig.align = "center", warning = FALSE, message = FALSE)
 ```
 
@@ -67,8 +67,8 @@ functions executable by MCPtaggR via the functions of the Rsubread package.
 You can install `MCPtaggR` from the GitHub repository.
 ```
 if (!requireNamespace("devtools", quietly = TRUE))
-    install.packages("devtools")
-    
+install.packages("devtools")
+
 devtools::install_github("tomoyukif/MCPtaggR", build_vignettes = FALSE)
 ```
 
@@ -150,7 +150,11 @@ that can be supplied to the mummer2SNPs() function as input.
 <br>
 <br>
 
-
+```{r}
+syri_fn <- system.file("extdata/syri/syri.out", package = "MCPtaggR")
+syri_fn <- "~/hdd3/genomeData/rice/wild_longistaminata/RGIR_IRGC110404/syri/syri.out"
+snps <- syri2SNPs(syri_fn = syri_fn)
+```
 
 ## Find MCP tags
 ### In silico genome digestion

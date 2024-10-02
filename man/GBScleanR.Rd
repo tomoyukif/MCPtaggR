@@ -4,6 +4,7 @@
 \name{GBScleanR}
 \alias{MCPtaggR}
 \alias{MCPtaggR-package}
+\alias{GBScleanR}
 \title{MCPtaggR: A package to conduct mappable-collinear-polymorphic tags genotyping.}
 \description{
 Mappable-collinear-polymorphic tags genotyping (MCPtagg) is a pipeline for
