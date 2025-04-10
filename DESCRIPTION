@@ -1,6 +1,6 @@
 Package: MCPtaggR
 Title: Mappable-collinear-polymorphic tag genotyping pipeline
-Version: 1.0.0
+Version: 1.1.0
 Authors@R: 
     person("Tomoyuki", "Furuta", , "f.tomoyuki@okayama-u.ac.jp", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))

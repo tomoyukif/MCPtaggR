@@ -54,7 +54,7 @@ run_mummer <- function(ref_fn,
     # Run delta-filter
     command <- paste(mummer_dir, "delta-filter", sep = "/")
     delta_fn <- paste0(out_dir, "/", out_fn, ".delta")
-    args <- paste("-1", delta_fn, ">", paste0(out_p, ".filt"))
+    args <- paste("-1g", delta_fn, ">", paste0(out_p, ".filt"))
     system2(command, args)
     
     # Run show-snps
@@ -665,7 +665,7 @@ findMCPtag <- function(ar, dg){
     
     ref_ol <- findOverlaps(seg_ref, dg$snps$ref)
     alt_ol <- findOverlaps(seg_alt, dg$snps$alt)
-    valid_snps <- intersect(subjectHits(ref_ol), subjectHits(alt_ol))
+    valid_snps <- sort(intersect(subjectHits(ref_ol), subjectHits(alt_ol)))
     out <- list(ref = dg$snps$ref[valid_snps], alt = dg$snps$alt[valid_snps])
     out$index_fn <- ar$index_fn
     class(out) <- c(class(out), "MCPtag")
