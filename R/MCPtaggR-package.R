@@ -27,7 +27,7 @@
 #'
 #'
 #' @docType package
-#' @name GBScleanR
+#' @name MCPtaggR
 #' @keywords internal
 "_PACKAGE"
 # The following block is used by usethis to automatically manage
